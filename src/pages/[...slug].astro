@@ -1,0 +1,60 @@
+---
+import Button from "@/components/button.astro";
+import Link from "@/components/link.astro";
+import Layout from "@/layouts/main.astro";
+import { formatDate } from "@/lib/date/format";
+import type { GetStaticPaths } from "astro";
+// import { Image } from "astro:assets";
+import { getCollection, type CollectionEntry } from "astro:content";
+
+export const getStaticPaths = (async () => {
+  const docs: CollectionEntry<"docs">[] = await getCollection("docs");
+  const paths = docs.map((doc) => ({
+    params: { slug: doc.slug },
+    props: { doc },
+  }));
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { doc } = Astro.props;
+const { Content } = await doc.render();
+---
+
+<Layout>
+  <article class="flex-1 overflow-auto p-4 md:mt-0 md:p-8">
+    <h2 class="mb-4 text-2xl font-bold">{doc.data.title}</h2>
+    <p class="text-base text-gray-600 dark:text-gray-400">
+      Written by <Link
+        title={doc.data.title}
+        href={`https://twitter.com/${doc.data.author}`}
+        class="!p-0 !font-bold !text-gray-950 dark:!text-white"
+      >
+        {doc.data.author}
+      </Link> on {formatDate(doc.data.createdAt)}
+    </p>
+    <div class="flex gap-x-4">
+      {
+        doc.data.tags.map((tag) => (
+          <Button
+            variant="fill"
+            class="!my-4 !border !border-solid !border-[#D7003D] !bg-white !bg-none !px-4 !py-1 !text-[#D7003D] hover:!bg-[#D7003D] hover:!text-white"
+          >
+            {tag.toUpperCase()}
+          </Button>
+        ))
+      }
+    </div>
+    <!-- <Image
+      src="https://plus.unsplash.com/premium_photo-1677567996070-68fa4181775a?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+      alt={doc.data.title + " picture"}
+      width={1118}
+      height={540}
+      class="mb-6 h-[540px] w-full rounded object-cover"
+    /> -->
+    <div
+      class="prose dark:prose-invert prose-p:my-0 prose-h2:mt-8 prose-h2:mb-4 prose-h3:mt-4 prose-h3:mb-2 w-full max-w-none"
+    >
+      <Content />
+    </div>
+  </article>
+</Layout>

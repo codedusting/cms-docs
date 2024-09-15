@@ -1,0 +1,64 @@
+---
+import { Moon, Sun, Search } from "lucide-astro";
+---
+
+<nav
+  class="flex items-center justify-end bg-gray-100 py-4 pr-4 md:justify-between dark:bg-gray-900"
+  aria-label="Main Navigation"
+>
+  <div class="relative hidden max-w-xl flex-1 md:block">
+    <label for="search" class="sr-only">Search documentation</label>
+    <input
+      id="search"
+      type="search"
+      placeholder="Find something..."
+      class="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#000066] dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
+    />
+    <Search
+      class="absolute left-3 top-1/2 -translate-y-1/2 transform text-gray-400"
+      size={18}
+      aria-hidden="true"
+    />
+    <span
+      class="absolute right-3 top-1/2 -translate-y-1/2 transform text-xs text-gray-400"
+      >Ctrl K</span
+    >
+  </div>
+  <div class="flex items-center space-x-4">
+    <button
+      id="themeToggle"
+      class="rounded-md p-2 text-gray-900 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-[#000066] dark:text-gray-100 dark:hover:bg-gray-700"
+      aria-label="Toggle theme"
+    >
+      <Sun class="hidden h-5 w-5 dark:block" aria-hidden="true" />
+      <Moon class="block h-5 w-5 dark:hidden" aria-hidden="true" />
+    </button>
+  </div>
+</nav>
+<script is:inline>
+  // Theme toggle functionality
+  const themeToggle = document.getElementById("themeToggle");
+  const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+  const setTheme = (isDark) => {
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+      themeToggle.setAttribute("aria-label", "Switch to light mode");
+    } else {
+      document.documentElement.classList.remove("dark");
+      themeToggle.setAttribute("aria-label", "Switch to dark mode");
+    }
+  };
+
+  // Set initial theme
+  setTheme(
+    localStorage.getItem("theme") === "dark" ||
+      (!("theme" in localStorage) && prefersDarkScheme.matches),
+  );
+
+  themeToggle.addEventListener("click", () => {
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+    setTheme(isDark);
+  });
+</script>

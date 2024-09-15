@@ -1,0 +1,15 @@
+---
+interface Props {
+  variant: "fill" | "outline";
+  class?: string;
+}
+
+const { variant, class: className, ...rest } = Astro.props;
+---
+
+<button
+  {...rest}
+  class={`${variant === "fill" ? `w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#000066] to-[#D7003D] hover:from-[#000044] hover:to-[#B5003A] rounded-md focus:outline-none focus:ring-2 focus:ring-[#000066] focus:ring-offset-2 ${className}` : variant === "outline" ? `w-full md:w-auto px-4 py-2 text-sm font-medium rounded-md border focus:outline-none focus:ring-2 focus:ring-[#000066] focus:ring-offset-2 text-[#000066] hover:text-[#D7003D] border-[#000066] dark:text-gray-100 dark:hover:text-[#D7003D] dark:border-gray-100 ${className}` : ""}`}
+>
+  <slot />
+</button>

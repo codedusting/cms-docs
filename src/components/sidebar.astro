@@ -1,0 +1,81 @@
+---
+import { Menu } from "lucide-astro";
+
+import { getCollection, type CollectionEntry } from "astro:content";
+import Link from "./link.astro";
+
+const docs: CollectionEntry<"docs">[] = (await getCollection("docs")).sort(
+  (a, b) => a.data.id - b.data.id,
+);
+---
+
+<button
+  id="mobileMenuBtn"
+  class="fixed left-4 top-4 z-50 rounded-md border border-solid border-gray-800/20 bg-white p-2 text-gray-800 md:hidden dark:bg-gray-800 dark:text-white"
+>
+  <Menu class="h-6 w-6" />
+  <span class="sr-only">Toggle menu</span>
+</button>
+
+<aside
+  class="fixed inset-y-0 left-0 z-30 w-full -translate-x-full transform bg-gray-100 p-6 text-gray-900 transition duration-200 ease-in-out md:relative md:w-80 md:translate-x-0 dark:bg-gray-900 dark:text-gray-100"
+  aria-label="Sidebar Navigation"
+  id="sidebar"
+>
+  <div class="mb-8 flex items-center justify-between">
+    <h2 class="flex items-center text-xl font-bold">
+      <span
+        class="mr-2 bg-gradient-to-r from-[#000066] to-[#D7003D] bg-clip-text text-transparent"
+        aria-hidden="true">●</span
+      >
+      The State of CMS in 2024
+    </h2>
+    <button id="closeSidebarBtn" class="md:hidden dark:text-white">
+      <span class="sr-only">Close menu</span>
+      <svg
+        class="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+  <nav>
+    <ul class="space-y-2">
+      {
+        docs.map((doc) => (
+          <li>
+            <Link
+              href={doc.slug === "" ? "/" : doc.slug}
+              title={doc.data.title}
+            >
+              {doc.data.title}
+            </Link>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</aside>
+
+<script is:inline>
+  const sidebar = document.getElementById("sidebar");
+  const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+  const closeSidebarBtn = document.getElementById("closeSidebarBtn");
+  const toggleSidebar = (type = "open") => {
+    sidebar.classList.toggle("-translate-x-full");
+    if (type === "open") {
+      mobileMenuBtn.classList.add("hidden");
+    } else {
+      mobileMenuBtn.classList.remove("hidden");
+    }
+  };
+  mobileMenuBtn.addEventListener("click", () => toggleSidebar("open"));
+  closeSidebarBtn.addEventListener("click", () => toggleSidebar("close"));
+</script>

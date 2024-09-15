@@ -1,0 +1,63 @@
+---
+import "@fontsource-variable/suse";
+import Sidebar from "@/components/sidebar.astro";
+import { ViewTransitions } from "astro:transitions";
+import "@/styles/global.css";
+import Navbar from "@/components/navbar.astro";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>The State of CMS in 2024</title>
+    <!-- <ViewTransitions /> -->
+  </head>
+  <body>
+    <div class="flex h-screen flex-col text-base md:flex-row" id="app">
+      <header class="sr-only">
+        <h1>CMS Evaluation Documentation</h1>
+      </header>
+      <Sidebar />
+      <main
+        class="flex flex-1 flex-col overflow-auto bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+      >
+        <Navbar />
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>
+
+<script is:inline>
+  // Navigation functionality
+  const navLinks = document.querySelectorAll("[data-nav-link]");
+  navLinks.forEach((link) => {
+    link.addEventListener("click", (e) => {
+      navLinks.forEach((l) =>
+        l.classList.remove("text-[#D7003D]", "font-semibold"),
+      );
+      e.target.classList.add("text-[#D7003D]", "font-semibold");
+      e.target.setAttribute("aria-current", "page");
+    });
+  });
+
+  // Close sidebar when clicking a link on mobile
+  navLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      if (window.innerWidth < 768) {
+        toggleSidebar();
+      }
+    });
+  });
+
+  // Close sidebar when resizing to desktop view
+  window.addEventListener("resize", () => {
+    if (window.innerWidth >= 768) {
+      sidebar.classList.remove("-translate-x-full");
+    }
+  });
+</script>
