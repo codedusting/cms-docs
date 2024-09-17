@@ -1,0 +1,638 @@
+---
+id: 2
+title: "Contentful"
+slug: "contentful"
+author: "codedusting"
+image: ""
+tags: ["cms", "contentful"]
+createdAt: 2024-09-16
+updatedAt: 2024-09-17
+---
+
+import { Image } from "astro:assets";
+
+### Introduction
+
+Contentful is a Headless CMS which means it separates the "presentation layer" (FE) from the "management layer" ( backend). Marketing team can manage the content independently, while the FE team can re-use the content for different components in the FE.
+
+### Details
+
+<details>
+<summary>
+<h4 style="display: inline-block;cursor:pointer;user-select: none;">Setup</h4>
+</summary>
+
+1. Create an account on <a href="https://contentful.com">contentful</a> and simply follow usual instructions till the below screen is reached:
+   <Image
+     src="https://github.com/user-attachments/assets/b771cccc-11bf-4818-8122-fe215da84ea8"
+     alt="spaces screen"
+     style="border: 1px solid #ddd; border-radius: 0.4rem;"
+     width="960"
+     height="540"
+   />
+2. Here, choose start from scratch and follow the steps shown.
+3. You can create a dummy content model named "Homepage" and fill it with following types as shown in the image below:
+   <Image
+     src="https://github.com/user-attachments/assets/75e4537d-0e6f-493e-81ad-d1e65eed2496"
+     alt="content model creation"
+     style="border: 1px solid #ddd; border-radius: 0.4rem;"
+     width="960"
+     height="540"
+   />
+4. Now go to "content" tab and click on "Add Entry" and simply fill the details as required. You can fill any data.
+   <Image
+     src="https://github.com/user-attachments/assets/0e500d1d-1ce9-439a-8e35-14788c84235f"
+     alt="adding content"
+     style="border: 1px solid #ddd; border-radius: 0.4rem;"
+     width="960"
+     height="540"
+   />
+5. Now, in your contentful dashboard, under the spaces, you'll find "Settings" dropdown. Click on it:
+   <Image
+     src="https://github.com/user-attachments/assets/aea52f8b-a2a7-4956-85f3-d369bc0483be"
+     alt="settings"
+     style="border: 1px solid #ddd; border-radius: 0.4rem;"
+     width="960"
+     height="184"
+   />
+6. You'll find "API Keys" and "CMA Token" option there. Click on it:
+   <Image
+     src="https://github.com/user-attachments/assets/1f582718-570d-469d-b44a-b3dee3c9fa0b"
+     alt="api settings"
+     style="border: 1px solid #ddd; border-radius: 0.4rem;"
+     width="376"
+     height="695"
+   />
+7. Just click on both one by one, and create the API keys and tokens and retrieve the values for the `.env` file
+   variables.
+8. Finally, go to "Settings" -> "Content Preview" for "Live Preview" feature. Once on that page, setup process and configure it like this for the localhost: **_http://localhost:3000/api/preview/enable-draft?secret=preview&slug={entry.fields.previewSlug}&locale={locale}_**
+   <Image
+     src="https://github.com/user-attachments/assets/bfedd534-9de4-4fad-a80c-1fcf02119258"
+     alt="content preview settings"
+     style="border: 1px solid #ddd; border-radius: 0.4rem;"
+     width="960"
+     height="540"
+   />
+9. Focus on the preview url that is supplied as we will use the `secret`, `slug`, and `locale` in our codebase api route `api/preview/enable-draft/route.ts`.
+10. At this point, we are ready to consume this data in our codebase.
+11. Open you next.js app and run `bun add @contentful/live-preview` or `npm install @contentful/live-preview` to install the `@contentful/live-preview` package for setting up "Live Preview" feature for visual editing.
+12. Create an `.env` file and paste the following values in it:
+    ```.dotenv
+      CONTENTFUL_ENVIRONMENT=master
+      CONTENTFUL_SPACE_ID=<your_space_id>
+      CONTENTFUL_ACCESS_TOKEN=<your_api_token>
+      CONTENTFUL_PREVIEW_ACCESS_TOKEN=<your_preview_access_token>
+      CONTENTFUL_PREVIEW_SECRET=preview # this can be any page value. here, it's a page url pointing to app/preview/page.tsx
+      CONTENTFUL_MANAGEMENT_TOKEN=<your_cma_token>
+    ```
+13. Now, create a new folder `[lang]` inside `app` folder. Inside it, create a folder named `preview`. Inside `preview` folder, create a `layout.tsx` file with following content:
+
+    ```tsx
+    import { type ReactNode } from "react";
+    import { draftMode } from "next/headers";
+    import { ContentfulPreviewProvider } from "./_components/contentful-preview-provider";
+
+    export default function PreviewLayout({
+      children,
+    }: {
+      children: ReactNode;
+    }) {
+      const { isEnabled } = draftMode();
+      return (
+        <ContentfulPreviewProvider
+          locale="en-US"
+          enableInspectorMode={isEnabled}
+          enableLiveUpdates={isEnabled}
+        >
+          {children}
+        </ContentfulPreviewProvider>
+      );
+    }
+    ```
+
+14. Now, create a folder named `_components` inside same `preview` folder with a new file `contentful-preview-provider.tsx` inside of it with the following content:
+
+    ```tsx
+    "use client";
+
+    import { ContentfulLivePreviewInitConfig } from "@contentful/live-preview";
+    import { ContentfulLivePreviewProvider } from "@contentful/live-preview/react";
+    import { PropsWithChildren } from "react";
+
+    export function ContentfulPreviewProvider({
+      children,
+      ...props
+    }: PropsWithChildren<ContentfulLivePreviewInitConfig>) {
+      return (
+        <ContentfulLivePreviewProvider {...props}>
+          {children}
+        </ContentfulLivePreviewProvider>
+      );
+    }
+    ```
+
+15. Next, inside the same `_components`, create another file `preview-wrapper.tsx` with following content:
+
+    ```tsx
+    "use client";
+
+    import { useContentfulLiveUpdates } from "@contentful/live-preview/react";
+    import HeroSection from "../../_components/hero-section";
+    import { HomeHeroSectionProps } from "@/lib/contentful/hero-section-api";
+
+    export default function PreviewWrapper({
+      data,
+    }: {
+      data: HomeHeroSectionProps;
+    }) {
+      const realtimeData = useContentfulLiveUpdates(data);
+      return <HeroSection {...realtimeData} />;
+    }
+    ```
+
+16. Then, create a folder `[slug]` inside `preview` folder with `page.tsx` file and following content:
+
+    ```tsx
+    import {
+      getAllHomeHeroSections,
+      getHomeHeroSection,
+      HomeHeroSectionProps,
+    } from "@/lib/contentful/hero-section-api";
+    import { notFound } from "next/navigation";
+    import PreviewWrapper from "../_components/preview-wrapper";
+
+    export async function generateStaticParams() {
+      const allPreviews = await getAllHomeHeroSections();
+
+      return allPreviews.map((preview: HomeHeroSectionProps) => ({
+        slug: preview.previewSlug,
+      }));
+    }
+
+    export default async function PreviewPage({
+      params,
+    }: {
+      params: { lang: string; slug: string };
+    }) {
+      console.log({ params });
+      const homeHeroSection = await getHomeHeroSection(
+        params.slug,
+        true,
+        params.lang,
+      );
+
+      if (!homeHeroSection) {
+        notFound();
+      }
+
+      return (
+        <section className="bg-primary text-primary-foreground grid place-items-center">
+          <PreviewWrapper data={homeHeroSection} />
+        </section>
+      );
+    }
+    ```
+
+17. Now, our `preview` folder code is done and we need supporting code for the functions and utils we have used there. I am assuming that the tailwindcss is being used since it's a nextjs app router app with clsx utils. So not worrying about that part.
+18. Go ahead and create a `contentful` folder inside of `lib` folder and create `hero-section-api.ts` file inside of it with following content:
+
+    ```tsx
+    export interface HomeHeroSectionProps {
+      sys: {
+        id: string;
+      };
+      heading: string;
+      description: string;
+      formSubmitButton: string;
+      formNoticeText: any;
+      mediaSection: {
+        sys: {
+          id: string;
+        };
+        url: string;
+      };
+      layout: string;
+      previewSlug: string;
+    }
+
+    // Set a variable that contains all the fields needed for blogs when a fetch for content is performed
+    const HOME_HERO_SECTION_GRAPHQL_FIELDS = `
+      sys {
+        id
+      }
+      __typename
+      heading
+      description
+      formSubmitButton
+      mediaSection {
+        sys {
+          id
+        }
+        __typename
+        url
+      }
+      layout
+      previewSlug
+    `;
+
+    async function fetchGraphQL(
+      query: string,
+      preview = false,
+      tags: [string] = [""],
+    ) {
+      return fetch(
+        `https://graphql.contentful.com/content/v1/spaces/${process.env.CONTENTFUL_SPACE_ID}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${
+              preview
+                ? process.env.CONTENTFUL_PREVIEW_ACCESS_TOKEN
+                : process.env.CONTENTFUL_ACCESS_TOKEN
+            }`,
+          },
+          body: JSON.stringify({ query }),
+          next: { tags },
+        },
+      ).then((response) => response.json());
+    }
+
+    function extractHomeHeroSectionEntries(fetchResponse: {
+      data: { homepageCollection: { items: HomeHeroSectionProps[] } };
+    }) {
+      return fetchResponse?.data?.homepageCollection?.items;
+    }
+
+    export async function getAllHomeHeroSections(
+      limit = 3,
+      isDraftMode = false,
+      locale: string = "en-US",
+    ) {
+      const blogs = await fetchGraphQL(
+        `query {
+          homepageCollection(where:{heading_exists: true},limit: ${limit}, preview: ${
+            isDraftMode ? "true" : "false"
+          }, locale: "${locale}") {
+              items {
+                ${HOME_HERO_SECTION_GRAPHQL_FIELDS}
+              }
+            }
+          }`,
+        isDraftMode,
+        ["home-hero-section"],
+      );
+
+      return extractHomeHeroSectionEntries(blogs);
+    }
+
+    export async function getHomeHeroSection(
+      slug: string,
+      isDraftMode = false,
+      locale: string = "en-US",
+    ) {
+      const preview = await fetchGraphQL(
+        `query {
+          homepageCollection(where:{previewSlug: "${slug}"}, limit: 1, preview: ${
+            isDraftMode ? "true" : "false"
+          }, locale: "${locale}") {
+              items {
+                ${HOME_HERO_SECTION_GRAPHQL_FIELDS}
+              }
+            }
+          }`,
+        isDraftMode,
+        [slug],
+      );
+      const data = extractHomeHeroSectionEntries(preview)[0];
+      return data;
+    }
+    ```
+
+19. Notice that we are using `graphql` in our `fetch` call to connect with the `contentful space` using `space_id` and `access_token`. Based on the boolean flag `preview` we are using either `preview_access_token` or `access_token`.
+20. Next, we need to create `api points` for receiving the request from the `Content Preview` call from the contentful. Remember this url **_http://localhost:3000/api/preview/enable-draft?secret=preview&slug={entry.fields.previewSlug}&locale={locale}_** we setup above in our Contentful Dashboard's `Content Preview`? Yes, now we use it.
+21. Notice that the URL is going towards the `/api/preview/enable-draft` route. So, in our app, inside `app` folder, we will replicate that folder structure and create a route file at `api/preview/enable-draft/route.ts` with following content:
+
+    ```tsx
+    import { getHomeHeroSection } from "@/lib/contentful/hero-section-api";
+    import { cookies, draftMode } from "next/headers";
+    import { redirect } from "next/navigation";
+
+    export async function GET(request: Request) {
+      const { searchParams } = new URL(request.url);
+      const secret = searchParams.get("secret");
+      const slug = searchParams.get("slug");
+      const locale = searchParams.get("locale") || "en-US";
+      const bypass = searchParams.get("x-vercel-protection-bypass");
+      console.log({ secret, slug, bypass });
+
+      if (!secret || !slug) {
+        return new Response("Missing parameters", { status: 400 });
+      }
+
+      // This secret should only be known to this route handler and the CMS
+      if (secret !== process.env.CONTENTFUL_PREVIEW_SECRET) {
+        return new Response("Invalid token", { status: 401 });
+      }
+
+      // Fetch preview post to check if the provided `[slug]` exists
+      const preview = await getHomeHeroSection(slug, true, locale);
+
+      // If the [slug] doesn't exist prevent draft mode from being enabled
+      if (!preview) {
+        return new Response("Blog not found", { status: 404 });
+      }
+
+      // Enable Draft Mode by setting the cookie
+      draftMode().enable();
+
+      // Override cookie header for draft mode for usage in live-preview
+      // https://github.com/vercel/next.js/issues/49927
+      const cookieStore = cookies();
+      const cookie = cookieStore.get("__prerender_bypass")!;
+      cookies().set({
+        name: "__prerender_bypass",
+        value: cookie?.value,
+        httpOnly: true,
+        path: "/",
+        secure: true,
+        sameSite: "none",
+      });
+
+      // Redirect to the path from the fetched post
+      // We don't redirect to searchParams.[slug] as that might lead to open redirect vulnerabilities
+      redirect(
+        `/${locale}/preview/${preview.previewSlug}?x-vercel-protection-bypass=${bypass}&x-vercel-set-bypass-cookie=samesitenone`,
+      );
+    }
+    ```
+
+22. Make sure to fix all the path import related issues in your code as per your folder structure. In the above code, we are checking for 3 things: `secret`, `slug`, and `locale` which we have setup in the `Content Preview` settings. Once we make sure they are present, we are trying to check if the `previewData` exists using our `graphql` requests. If present, we are setting up `cookies` and enabling `draftMode` of nextjs and then `redirecting` the request to our `[lang]/preview/[slug]` route with proper values to be captured there and utilised for showing our `Live Preview`.
+23. Now, go inside `[lang]` folder and create a new `layout.tsx` file, `_components` folder, and `page.tsx` file. You can delete the `layout.tsx` and `page.tsx` file created by nextjs app cli inside the `app` folder.
+24. Fill the `layout.tsx` file with following content:
+
+    ```tsx
+    import type { Metadata } from "next";
+    import "./globals.css";
+    import { Questrial } from "next/font/google";
+    import { cn } from "@/lib/utils";
+    import Link from "next/link";
+    import Locale from "./_components/locale";
+
+    const q = Questrial({
+      weight: ["400"],
+      subsets: ["latin"],
+      variable: "--font-sans",
+    });
+
+    export const metadata: Metadata = {
+      title: "Contentful Evaluation",
+      description: "Generated by create next app",
+    };
+
+    const menus = [{ id: 1, name: "Home", href: "/" }];
+
+    export default function RootLayout({
+      children,
+    }: Readonly<{
+      children: React.ReactNode;
+    }>) {
+      return (
+        <html lang="en" suppressHydrationWarning={true}>
+          <body className={cn(q.variable, "font-sans antialiased")}>
+            <header className="bg-primary text-primary-foreground p-6">
+              <div className="container flex items-center justify-between">
+                <div className="flex gap-x-4 lg:px-10 xl:px-20">
+                  {menus.map((menu) => (
+                    <Link
+                      href={menu.href}
+                      key={menu.href}
+                      className="font-semibold"
+                    >
+                      {menu.name}
+                    </Link>
+                  ))}
+                </div>
+                <div className="flex gap-x-4 lg:px-10 xl:px-20">
+                  <Locale />
+                </div>
+              </div>
+            </header>
+            {children}
+          </body>
+        </html>
+      );
+    }
+    ```
+
+25. Fill the `page.tsx` file with following content:
+
+    ```tsx
+    import { getHomeHeroSection } from "@/lib/contentful/hero-section-api";
+    import HeroSection from "./_components/hero-section";
+
+    export default async function HomePage({
+      params,
+    }: {
+      params: { lang: string };
+    }) {
+      const homeHeroSection = await getHomeHeroSection(
+        "home-hero-section",
+        false,
+        params.lang,
+      );
+
+      return (
+        <section className="bg-primary text-primary-foreground grid place-items-center">
+          <HeroSection {...homeHeroSection} />
+        </section>
+      );
+    }
+    ```
+
+26. And create 3 files inside `_components` folder, named `hero-section.tsx`, `locale.tsx`, and `hero-form.tsx`. Fill `locale.tsx` with this content:
+
+    ```tsx
+    "use client";
+
+    import Link from "next/link";
+
+    export default function Locale() {
+      return (
+        <>
+          <Link
+            href={"/en-US"}
+            className="bg-primary-foreground text-primary rounded p-2 font-bold"
+          >
+            English
+          </Link>
+          <Link
+            href={"/hi"}
+            className="rounded bg-amber-600 p-2 font-bold text-white"
+          >
+            Hindi
+          </Link>
+        </>
+      );
+    }
+    ```
+
+27. Fill `hero-section.tsx` with this content:
+
+    ```tsx
+    import { HomeHeroSectionProps } from "@/lib/contentful/hero-section-api";
+    import { cn } from "@/lib/utils";
+    import Image from "next/image";
+    import HeroForm from "./hero-form";
+
+    export default function HeroSection({
+      layout,
+      heading,
+      description,
+      formSubmitButton,
+      mediaSection,
+    }: HomeHeroSectionProps) {
+      return (
+        <section
+          className={cn(
+            "container mx-auto grid grid-cols-1 p-6 lg:grid-cols-2 lg:items-center",
+            { "grid-cols-1": layout === "No Image" },
+          )}
+        >
+          <div
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 lg:col-span-1 lg:mb-0 lg:items-start lg:p-10 xl:p-20",
+              {
+                "order-2 mt-6": layout === "Left Image and Right Text",
+              },
+              {
+                "order-1 mb-6": layout === "Right Image and Left Text",
+              },
+            )}
+          >
+            <h1 className="text-center font-sans text-4xl font-bold leading-none lg:text-left lg:text-5xl lg:leading-tight">
+              {heading}
+            </h1>
+            <p className="mb-6 text-center font-sans text-base lg:text-left lg:text-lg">
+              {description}
+            </p>
+            <HeroForm submitBtnText={formSubmitButton} />
+          </div>
+          <Image
+            src={mediaSection?.url}
+            alt={heading}
+            width={800}
+            height={480}
+            quality={100}
+            priority={true}
+            className={cn(
+              "rounded-2xl object-contain lg:col-span-1 lg:p-10 xl:p-20",
+              {
+                "order-1": layout === "Left Image and Right Text",
+              },
+              {
+                "order-2": layout === "Right Image and Left Text",
+              },
+              {
+                hidden: layout === "No Image",
+              },
+            )}
+          />
+        </section>
+      );
+    }
+    ```
+
+28. And fill `hero-form.tsx` with this content:
+
+    ```tsx
+    "use client";
+
+    export default function HeroForm({
+      submitBtnText,
+    }: {
+      submitBtnText: string;
+    }) {
+      return (
+        <form className="grid w-full max-w-[550px] grid-cols-1 items-center rounded lg:grid-cols-3 lg:border lg:border-solid lg:border-slate-400">
+          <label className="lg:col-span-2">
+            <input
+              type="email"
+              name="email"
+              id="email"
+              placeholder="Enter your email address"
+              className="form-input w-full rounded bg-transparent py-5 lg:border-none"
+            />
+          </label>
+          <button
+            type="submit"
+            className="text-primary mt-2 rounded bg-[#FDB71C] p-4 font-bold lg:col-span-1 lg:mt-0 lg:h-[90%] lg:w-[98%] lg:p-2"
+          >
+            {submitBtnText}
+          </button>
+        </form>
+      );
+    }
+    ```
+
+29. You will notice that the form is a dummy component. It's fine, as it's just a basic contentful setup walkthrough guide. None of these, apart from preview step, is required but since we are using `hero-section.tsx` in our `preview`, we need it here.
+30. Finally, go to `next.config.[mjs|ts|js]` file and place this content there:
+
+    ```tsx
+    /** @type {import("next").NextConfig} */
+    const nextConfig = {
+      images: {
+        remotePatterns: [
+          { protocol: "https", hostname: "images.ctfassets.net" },
+        ],
+        formats: ["image/webp"],
+      },
+      async redirects() {
+        return [{ source: "/", destination: "/en-US", permanent: true }];
+      },
+    };
+
+    export default nextConfig;
+    ```
+
+31. The `redirects()` is required to redirect all incoming calls to our route to `/en-US` locale by default. If you notice, our users can click on the `<Locale />` buttons to change it anytime they want in this small demo.
+32. Once this step is done, you can check all the imports and then run `npm run dev` or `bun dev` to test out the `Live Preview` feature in realtime.
+
+</details>
+
+<details>
+  <summary>
+    <h4 style="display: inline-block;cursor:pointer;user-select: none;">
+      Video Demo after above setup (not available to public till this month's
+      end)
+    </h4>
+  </summary>
+  <iframe
+    width="960"
+    height="540"
+    src="https://www.youtube.com/embed/R9Jx0y7CHy0?si=x4jXSBMZrrD-fYTB"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+</details>
+
+<details>
+  <summary>
+    <h4 style="display: inline-block;cursor:pointer;user-select: none;">
+      Evaluation
+    </h4>
+  </summary>
+
+1. **Marketing Team Independence**: The `Contentful Team` has come up with a new offering called `Contentful Studio` but that is not available in the `Free Plan` to evaluate fully. In the absence of that evaluation, the verdict here is that it's not possible in Free Plan but in theory, it allows the development team to create custom components for the `Drag and Drop` feature to be used by `Marketing team`. How good is it? We cannot say.
+2. **Content Creation and Editing**: It's easy to edit content for the `Marketing team` thanks to the `Live Preview` feature. However, `Live Preview` feature needs to be setup for each `Content Model` by the `Development Team` in the test.
+3. **Page Creation and Publishing**: It's possible to create new pages later if the `Development team` has setup the `catch_all_route` slug for the same. However, it's not possible to setup dynamic structure of the pages. The structure will be predefined rather than what the marketing team later wants. In short, no design change can be done independent of development team. Again, is it possible in `Contentful Studio`? No idea as it was not testable in the Free Plan.
+4. **Integration with Next.js**: The docs of integration is not straight forward and required going to their github examples to setup properly with trial and error. Documentation has become quite vast and it's difficult to find relevant topics quickly. A lot of time was wasted going in circles with no clear cut explanation as to what feature solves what problems in the Content Mangement System Domain.
+
+</details>
+
+### Verdict
+
+The final verdict depends on the quality of documentation (development team), ease of editing later (marketing team), and pricing (product team). So I rate it as: <div style="background: orange; color: black; width: max-content; padding: 1rem; border-radius: 0.4rem;margin-top:1rem;">Recommended but with caution!</div>

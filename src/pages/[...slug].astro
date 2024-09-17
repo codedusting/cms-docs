@@ -23,15 +23,29 @@ const { Content } = await doc.render();
 <Layout>
   <article class="flex-1 overflow-auto p-4 md:mt-0 md:p-8">
     <h2 class="mb-4 text-2xl font-bold">{doc.data.title}</h2>
-    <p class="text-base text-gray-600 dark:text-gray-400">
-      Written by <Link
-        title={doc.data.title}
-        href={`https://twitter.com/${doc.data.author}`}
-        class="!p-0 !font-bold !text-gray-950 dark:!text-white"
-      >
-        {doc.data.author}
-      </Link> on {formatDate(doc.data.createdAt)}
-    </p>
+    <div class="flex flex-col gap-x-4 gap-y-2 lg:flex-row">
+      <p class="text-base text-gray-600 dark:text-gray-400">
+        Written by <Link
+          title={doc.data.title}
+          href={`https://twitter.com/${doc.data.author}`}
+          class="!p-0 !font-bold !text-gray-950 dark:!text-white"
+        >
+          {doc.data.author}
+        </Link> on {formatDate(doc.data.createdAt)}
+      </p>
+      <hr
+        class="hidden h-6 w-px border-0 bg-gray-300 dark:bg-gray-700 lg:block"
+      />
+      <p class="text-base text-gray-600 dark:text-gray-400">
+        Updated by <Link
+          title={doc.data.title}
+          href={`https://twitter.com/${doc.data.author}`}
+          class="!p-0 !font-bold !text-gray-950 dark:!text-white"
+        >
+          {doc.data.author}
+        </Link> on {formatDate(doc.data.updatedAt)}
+      </p>
+    </div>
     <div class="flex gap-x-4">
       {
         doc.data.tags.map((tag) => (
@@ -52,7 +66,7 @@ const { Content } = await doc.render();
       class="mb-6 h-[540px] w-full rounded object-cover"
     /> -->
     <div
-      class="prose dark:prose-invert prose-p:my-0 prose-h2:mt-8 prose-h2:mb-4 prose-h3:mt-4 prose-h3:mb-2 w-full max-w-none"
+      class="prose w-full max-w-none dark:prose-invert prose-h2:mb-4 prose-h2:mt-8 prose-h3:mb-2 prose-h3:mt-4 prose-p:my-0"
     >
       <Content />
     </div>
